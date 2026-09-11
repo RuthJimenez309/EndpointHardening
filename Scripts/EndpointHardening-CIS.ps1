@@ -1,14 +1,14 @@
 <#
 .SYNOPSIS
     EndpointHardening-CIS - Script de Automatización de Seguridad
-    Basado en las recomendaciones de los CIS Benchmarks para Windows.
+    CIS Benchmarks para Windows.
 #>
 
-# 1. Configuración de Rutas de Telemetría
+# 1. Configuración_Rutas_Telemetría
 $LogDir = "C:\Users\Ruth\Documents\EndpointHardening\Logs"
 $LogFile = "$LogDir\HardeningTelemetry.json"
 
-# 2. Función para generar entradas de Log formateadas para SIEM
+# 2. Función_generar_entradas_Log _SIEM
 function Write-SIEMLog {
     param (
         [string]$ControlID,
@@ -18,7 +18,7 @@ function Write-SIEMLog {
         [string]$Detalle
     )
     
-    # Estructura de objeto plano optimizado para SIEM
+    # Estructura_objeto_plano 
     $LogEntry = [PSCustomObject]@{
         Timestamp  = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
         Hostname   = $env:COMPUTERNAME
@@ -29,12 +29,12 @@ function Write-SIEMLog {
         Detalle    = $Detalle
     }
     
-    # Convertir a JSON en una sola línea (formato JSON Lines / NDJSON, ideal para SIEM)
+    # Convertir_JSON
     $JsonEntry = $LogEntry | ConvertTo-Json -Compress
     Add-Content -Path $LogFile -Value $JsonEntry
 }
 
-# Inicializar Telemetría del Script
+# Inicializar 
 Write-SIEMLog -ControlID "CIS-0.0" -Componente "ScriptEngine" -Accion "Inicio" -Estado "Ejecutando" -Detalle "Iniciando proceso de auditoría y hardening CIS."
 
 # =============================================================================
@@ -43,7 +43,7 @@ Write-SIEMLog -ControlID "CIS-0.0" -Componente "ScriptEngine" -Accion "Inicio" -
 # =============================================================================
 Write-Host "`n[*] Evaluando Control 1: Estado de SMBv1..." -ForegroundColor Cyan
 
-# Comprobar el estado actual de la característica SMBv1
+# Comprobar el estado actual del SMBv1
 $SMBv1Status = Get-WindowsOptionalFeature -Online -FeatureName "SMB1Protocol"
 
 if ($SMBv1Status.State -eq "Enabled") {
@@ -83,13 +83,13 @@ if (-not (Test-Path $RegistryPath)) {
 
 $LLMNRStatus = Get-ItemProperty -Path $RegistryPath -Name $ValueName -ErrorAction SilentlyContinue
 
-# En Windows, poner EnableMulticast en 0 deshabilita LLMNR de manera segura
+# En Windows, poner EnableMulticast en 0 deshabilita 
 if ($null -eq $LLMNRStatus -or $LLMNRStatus.$ValueName -ne 0) {
     Write-SIEMLog -ControlID "CIS-9.2" -Componente "LLMNR" -Accion "Auditoria" -Estado "Inseguro" -Detalle "Resolución LLMNR activa o no configurada en el registro."
     Write-Host "[!] ALERTA: LLMNR está activo. Aplicando política de Hardening en Registro..." -ForegroundColor Yellow
     
     try {
-        # Modificación segura del registro para aplicar hardening corporativo
+        # Modificación segura del registro 
         New-ItemProperty -Path $RegistryPath -Name $ValueName -Value 0 -PropertyType DWord -Force | Out-Null
         
         Write-SIEMLog -ControlID "CIS-9.2" -Componente "LLMNR" -Accion "Remediacion" -Estado "Corregido" -Detalle "Se añadio EnableMulticast=0 en el registro para mitigar ataques LLMNR Poisoning."
@@ -104,7 +104,7 @@ if ($null -eq $LLMNRStatus -or $LLMNRStatus.$ValueName -ne 0) {
     Write-Host "[+] SEGURO: LLMNR ya está desactivado mediante directiva." -ForegroundColor Green
 }
 
-# Finalizar ejecución del Script
+# Finalizar 
 Write-SIEMLog -ControlID "CIS-0.0" -Componente "ScriptEngine" -Accion "Fin" -Estado "Completado" -Detalle "Proceso de hardening finalizado correctamente."
 Write-Host "`n[+] Hardening completado. Telemetría generada en la carpeta Logs." -ForegroundColor Green
 
